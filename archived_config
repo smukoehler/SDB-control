@@ -1,0 +1,5 @@
+[mpc]
+rate = 300.0
+input_variables=STA_508___SVEL,STA_508____RVP,STA_BLD_X__OAT
+state_variables=STA_508____ART
+time_period=1
