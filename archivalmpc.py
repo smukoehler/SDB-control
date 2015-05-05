@@ -56,29 +56,29 @@ class SimpleOfflineMPC:
 	'''
 	Reads data to be supplied to build the model
 	'''
-def read_stream_data(self, num_days=1):
-	self.points = {}
-	c = SmapClient("http://new.openbms.org/backend")
-	for point in self.input_variables:
-		q = "apply window(mean, field='second',width='%d') to data in (\"03/01/2015\" -%ddays, \"03/07/2015\") where Metadata/Name='%s'" % \
-					( self.rate,  num_days,  point )
+	def read_stream_data(self, num_days=1):
+		self.points = {}
+		c = SmapClient("http://new.openbms.org/backend")
+		for point in self.input_variables:
+			q = "apply window(mean, field='second',width='%d') to data in (\"03/01/2015\" -%ddays, \"03/07/2015\") where Metadata/Name='%s'" % \
+						( self.rate,  num_days,  point )
 
-		print q
-		result = c.query(q)
-		readings = result[0]["Readings"]
-		self.points[point] = [ r[1] for r in result[0]["Readings"] ]
+			print q
+			result = c.query(q)
+			readings = result[0]["Readings"]
+			self.points[point] = [ r[1] for r in result[0]["Readings"] ]
 
-	for point in self.state_variables:
-		query = "apply window(mean, field='second',width='%d') to data in (\"03/01/2015\" -%ddays, \"03/07/2015\") where Metadata/Name='%s'" % \
-					( self.rate,  num_days,  point )
+		for point in self.state_variables:
+			query = "apply window(mean, field='second',width='%d') to data in (\"03/01/2015\" -%ddays, \"03/07/2015\") where Metadata/Name='%s'" % \
+						( self.rate,  num_days,  point )
 
-		result = c.query(query)
-		readings = result[0]["Readings"]
-		self.points[point] = [ r[1] for r in result[0]["Readings"] ]
+			result = c.query(query)
+			readings = result[0]["Readings"]
+			self.points[point] = [ r[1] for r in result[0]["Readings"] ]
 
-	self.predictions = []
-	self.model_params = []
-	self.actual_outputs = []
+		self.predictions = []
+		self.model_params = []
+		self.actual_outputs = []
 
 
 
