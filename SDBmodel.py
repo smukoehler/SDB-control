@@ -35,8 +35,8 @@ class SDBmodel:
 		return Abmatrices
 
 
-	def identify_model(self):
-		self.clf.fit(self.Amatrix,self.bmatrix)
+	def identify_model(self,A,b):
+		self.clf.fit(A,b)
 
 	def identify_model_JuMP(self):
 		# Tony write this
@@ -48,10 +48,17 @@ class SDBmodel:
 		prediction = self.clf.predict( inputs )
 		return [prediction]
 
-	def assemble_linmodel_matrices(self,n,m):
-		A = [];
-		B = [];
-		return A,B;
+	def assemble_linmodel_matrices(self,params,n,m):
+		A = numpy.zeros((n,n));
+		B = numpy.zeros((n,m));
+		for i in range(0,n):
+			for j in range(0,n):
+				A[i][j] = params[i+j*n];
+			for j in range(0,m):
+				B[i][j] = params[i+j*m+n*(n-1)]
+		linmatrices = collections.namedtuple('matrices',['A','B'])
+		ABmatrices = linmatrices(A,B)
+		return ABmatrices;
 
 	def get_model(self):
 		return self.clf.coef_

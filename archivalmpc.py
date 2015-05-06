@@ -45,36 +45,38 @@ class SimpleOfflineMPC:
 			# Call mpc kernel to add data
 			self.model.add_data( input_vector_t_1 , state_vector_t_1)
 
-			# Print data for DEBUG
-			if step == 3:
-				print state_vector_t_1
-				print input_vector_t_1
+			# # Print data for DEBUG
+			# if step == 3:
+			# 	print state_vector_t_1
+			# 	print input_vector_t_1
 
 
 		# Make model matrices
 		n = regsteps;
 		m = len(self.input_variables);
-		matrices = self.model.assemble_fit_matrices(n,m)
+		fitmatrices = self.model.assemble_fit_matrices(n,m)
 
+		# print fitmatrices.A
+		# print fitmatrices.b
+		print numpy.shape(fitmatrices.A)
+		print numpy.shape(fitmatrices.b)
+
+		# Identify model
+		self.model.identify_model(fitmatrices.A,fitmatrices.b)
+
+		# Get model parameters
+		params = self.model.get_model()
+
+		print params[:]
+
+		# Put together lin model matrices
+		matrices = 	self.model.assemble_linmodel_matrices(params,n,m);
+
+		print "A matrix of ARMA"
 		print matrices.A
-		print matrices.b
-		print numpy.shape(matrices.A)
-		print numpy.shape(matrices.b)
+		print "B matrix of ARMA"
+		print matrices.B
 
-		# print self.model.Amatrix
-		# print self.model.bmatrix
-
-		# both these numbers should be equal to the number of rows
-		# print len(self.model.Amatrix[:])
-		# print len(self.model.bmatrix)
-
-		# # Identify model
-		# self.model.identify_model()
-		#
-		# # Get model parameters
-		# params = self.model.get_model()
-		#
-		# print params[:]
 		#
 		# # Validate model
 		# self.validate_model()
