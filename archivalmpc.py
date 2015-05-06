@@ -1,11 +1,12 @@
 import urlparse
 from smap.archiver.client import SmapClient
-from mpc import *
+#from mpc import *
 from ConfigParser import ConfigParser
 from smap.contrib import dtutil
 import smap
 import matplotlib.pyplot as plt
 import numpy
+from SDBmodel import *
 
 class SimpleOfflineMPC:
 
@@ -25,32 +26,79 @@ class SimpleOfflineMPC:
 	Create MPC kernel
 	'''
 	def setup_model(self):
-		self.mpc_model = MPC()
+		self.model = SDBmodel()
 
 
 	'''
 	Function that runs periodically to update the model
 	'''
 	def run(self):
-		for i in range(2, 100):
+		# regression steps; use two autoregressive steps
+		regsteps = 2;
+
+		# Collect data
+		for step in range(2, 1000):
 			# Input vector at step t-1
-			input_vector_t_1 = self.construct_input(i-1)
+			input_vector_t_1 = self.construct_input(step-1)
 			# State vector at step t-1
-			state_vector_t_1 = self.construct_state(i-1)
+			state_vector_t_1 = self.construct_state(step-1,regsteps)
 			# Call mpc kernel to add data
-			self.mpc_model.add_data( input_vector_t_1 , state_vector_t_1)
+			self.model.add_data( input_vector_t_1 , state_vector_t_1)
 
-			# Input vector at step t
-			input_vector_t = self.construct_input(i)
+			# Print data for DEBUG
+			if step == 3:
+				print state_vector_t_1
+				print input_vector_t_1
 
-			# Predict by calling mpc kernel
-			prediction = self.mpc_model.predict( input_vector_t )
 
-			# Get model parameters
-			params = self.mpc_model.get_model()
+		# Make model matrices
+		n = regsteps;
+		m = len(self.input_variables);
+		matrices = self.model.assemble_fit_matrices(n,m)
 
-			# Do post processing
-			self.post_processing(i , prediction, self.construct_state(i)[0], params)
+		print matrices.A
+		print matrices.b
+		print numpy.shape(matrices.A)
+		print numpy.shape(matrices.b)
+
+		# print self.model.Amatrix
+		# print self.model.bmatrix
+
+		# both these numbers should be equal to the number of rows
+		# print len(self.model.Amatrix[:])
+		# print len(self.model.bmatrix)
+
+		# # Identify model
+		# self.model.identify_model()
+		#
+		# # Get model parameters
+		# params = self.model.get_model()
+		#
+		# print params[:]
+		#
+		# # Validate model
+		# self.validate_model()
+
+		# OLD CODE
+		# for i in range(2, 100):
+		# 	# Input vector at step t-1
+		# 	input_vector_t_1 = self.construct_input(i-1)
+		# 	# State vector at step t-1
+		# 	state_vector_t_1 = self.construct_state(i-1)
+		# 	# Call mpc kernel to add data
+		# 	self.mpc_model.add_data( input_vector_t_1 , state_vector_t_1)
+		#
+		# 	# Input vector at step t
+		# 	input_vector_t = self.construct_input(i)
+		#
+		# 	# Predict by calling mpc kernel
+		# 	prediction = self.mpc_model.predict( input_vector_t )
+		#
+		# 	# Get model parameters
+		# 	params = self.mpc_model.get_model()
+		#
+		# 	# Do post processing
+		# 	self.post_processing(i , prediction, self.construct_state(i)[0], params)
 
 
 	'''
@@ -89,18 +137,19 @@ class SimpleOfflineMPC:
 		input_vector = []
 		for point in self.input_variables:
 			input_vector.append( self.points[point][ step - 1] )
-		for point in self.state_variables:
-			input_vector.append( self.points[point][ step - 1] )
+		# for point in self.state_variables:
+		# 	input_vector.append( self.points[point][ step - 1] )
 		return input_vector
 
 	'''
-	Constructs the state vector at a particular timestep
+	Constructs the state vector at a particular timestep using autoregression
 	'''
-	def construct_state(self, step):
+	def construct_state(self, step, regsteps):
 		state_vector = []
 		for point in self.state_variables:
-			state_vector.append( self.points[point][ step - 1 ])
-		return state_vector
+			for i in range(0,regsteps):
+				state_vector.append(self.points[point][ step - 1 + i])
+		return state_vector[:]
 
 	'''
 	Do post processing
@@ -144,8 +193,33 @@ class SimpleOfflineMPC:
 		plt.legend()
 		plt.show()
 
+	def validate_model(self):
+		# initial state
+		initial_state = []
+		for point in self.state_variables:
+			initial_state.append( self.points[point][0])
+
+		trajectory = [initial_state[:]]
+		# propogate state with inputs
+		for i in range(1, 1000):
+			next_state = []
+			current_input = []
+			for point in self.input_variables:
+				current_input.append( self.points[point][i] )
+			next_state = self.model.predict(trajectory[-1],current_input)
+			trajectory.append(next_state)
+
+		plt.subplot(2,1,1)
+		plt.plot( numpy.arange( len(trajectory) ), trajectory, label="predicted trajectory")
+		plt.plot( numpy.arange( len(self.actual_outputs) ), self.actual_outputs, label="actual-output")
+		plt.xlabel("Step")
+		plt.legend()
+		plt.show()
+
+		return trajectory
+
 
 if __name__ == "__main__":
 	som = SimpleOfflineMPC(sys.argv[1])
 	som.run()
-	som.plot()
+	# som.plot()

@@ -29,7 +29,7 @@ class SineWaveMPC():
 			# Input vector at step t-1
 			input_vector_t_1 = self.construct_input(i-1)
 			# State vector at step t-1
-			state_vector_t_1 = self.construct_state(i-1)
+			state_vector_t_1 = self.construct_state(i-1,1)
 			# Call mpc kernel to add data
 			self.model.add_data( input_vector_t_1 , state_vector_t_1)
 
