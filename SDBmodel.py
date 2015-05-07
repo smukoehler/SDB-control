@@ -6,7 +6,7 @@ import collections
 
 class SDBmodel:
 	def __init__(self):
-		self.clf = linear_model.Lasso(alpha=0.1 , max_iter=1000)
+		self.clf = linear_model.Lasso(alpha=0.0001 , max_iter=1000000)
 		self.input_data = []
 		self.state_data = []
 
@@ -42,11 +42,17 @@ class SDBmodel:
 		# Tony write this
 		print "To be written"
 
-	def predict(self , state_vector, input_vector):
-		inputs = state_vector[:]
-		inputs.extend(input_vector[:])
+	def predict(self , state_vector, input_vector,n,m):
+		inputs = []
+		for i in range(0,n):
+			for j in range(0,n):
+				inputs.append(state_vector[i])
+		for i in range(0,m):
+			for j in range(0,n):
+				inputs.append(input_vector[i])
+		print inputs
 		prediction = self.clf.predict( inputs )
-		return [prediction]
+		return prediction
 
 	def assemble_linmodel_matrices(self,params,n,m):
 		A = numpy.zeros((n,n));
@@ -55,7 +61,7 @@ class SDBmodel:
 			for j in range(0,n):
 				A[i][j] = params[i+j*n];
 			for j in range(0,m):
-				B[i][j] = params[i+j*m+n*(n-1)]
+				B[i][j] = params[i+j*n+n*n]
 		linmatrices = collections.namedtuple('matrices',['A','B'])
 		ABmatrices = linmatrices(A,B)
 		return ABmatrices;
