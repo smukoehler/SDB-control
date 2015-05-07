@@ -41,3 +41,7 @@ Thumbs.db
 *.aux
 *.log
 *.synctex.gz
+
+# Ignore Python junk #
+######################
+*.pyc
