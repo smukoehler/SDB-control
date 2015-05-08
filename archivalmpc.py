@@ -67,7 +67,7 @@ class SimpleOfflineMPC:
 		# Get model parameters
 		params = self.model.get_model()
 
-		print params[:]
+		# print params[:]
 
 		# Put together lin model matrices
 		matrices = 	self.model.assemble_linmodel_matrices(params,n,m);
@@ -81,15 +81,15 @@ class SimpleOfflineMPC:
 		prediction = [];
 		actual  = [];
 		# print fitmatrices.A[0:5]
+		state = self.construct_state(2,regsteps);
 		for step in range(2, 1000):
 			newpredict = 0;
-			newinput = self.construct_state(step,regsteps);
+			newinput = state[:];
 			newinput.extend(self.construct_input(step));
-			# print newinput
 			for i in range(0,n+m):
 				newpredict = newpredict + params[i*n]*newinput[i];
 			prediction.append(newpredict)
-			# prediction.append(self.model.predict(self.construct_state(step,regsteps),self.construct_input(step),n,m))
+			state = self.propagate_state(state,newinput[n:],matrices.A,matrices.B)
 			state_t = self.construct_state(step,regsteps)
 			actual.append(numpy.array([state_t[0]]))
 
@@ -163,6 +163,11 @@ class SimpleOfflineMPC:
 
 	def save_actual_output(self, val):
 		self.actual_outputs.append( val )
+
+	def propagate_state(self, state, newinput, A, B):
+		state = numpy.dot(A,state) + numpy.dot(B,newinput);
+		return state[:].tolist()
+
 
 
 if __name__ == "__main__":
