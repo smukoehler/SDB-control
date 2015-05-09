@@ -54,7 +54,7 @@ class SimpleOfflineMPC:
 		# Make model matrices
 		n = regsteps;
 		m = len(self.input_variables);
-		fitmatrices = self.model.assemble_fit_matrices(n,m)
+		fitmatrices = self.model.assemble_ARMAfit_matrices(n,m)
 
 		# # print fitmatrices.A
 		# # print fitmatrices.b
@@ -67,7 +67,7 @@ class SimpleOfflineMPC:
 		# Get model parameters
 		params = self.model.get_model()
 
-		# print params[:]
+		print params[:]
 
 		# Put together lin model matrices
 		matrices = 	self.model.assemble_linmodel_matrices(params,n,m);
@@ -77,7 +77,33 @@ class SimpleOfflineMPC:
 		print "B matrix of ARMA"
 		print matrices.B
 
-		# Do model validation
+		# Do One-Step Prediction
+		prediction = [];
+		actual  = [];
+		for step in range(2, 1000):
+			newpredict = 0;
+			newinput = self.construct_state(step,regsteps);
+			newinput.extend(self.construct_input(step));
+			# print newinput
+			for i in range(0,n+m):
+				newpredict = newpredict + params[i]*newinput[i];
+			prediction.append(newpredict)
+			# prediction.append(self.model.predict(self.construct_state(step,regsteps),self.construct_input(step),n,m))
+			state_t = self.construct_state(step,regsteps)
+			actual.append(numpy.array([state_t[0]]))
+
+		# print prediction[1:5]
+		# print actual[1:5]
+		# print numpy.shape(prediction)
+		# print numpy.shape(actual)
+		plt.subplot(2,1,1)
+		plt.plot( numpy.arange( len(prediction) ), prediction, label="predicted trajectory")
+		plt.plot( numpy.arange( len(actual) ), actual, label="actual-output")
+		plt.xlabel("Step")
+		plt.legend()
+		plt.title("One step prediction")
+
+		# Do full day prediction
 		prediction = [];
 		actual  = [];
 		# print fitmatrices.A[0:5]
@@ -87,23 +113,19 @@ class SimpleOfflineMPC:
 			newinput = state[:];
 			newinput.extend(self.construct_input(step));
 			for i in range(0,n+m):
-				newpredict = newpredict + params[i*n]*newinput[i];
+				newpredict = newpredict + params[i]*newinput[i];
 			prediction.append(newpredict)
 			state = self.propagate_state(state,newinput[n:],matrices.A,matrices.B)
 			state_t = self.construct_state(step,regsteps)
 			actual.append(numpy.array([state_t[0]]))
 
-		# print prediction[1:5]
-		# print actual[1:5]
-		# print numpy.shape(prediction)
-		# print numpy.shape(actual)
-		# # plt.subplot(2,1,1)
+		plt.subplot(2,1,2)
 		plt.plot( numpy.arange( len(prediction) ), prediction, label="predicted trajectory")
 		plt.plot( numpy.arange( len(actual) ), actual, label="actual-output")
 		plt.xlabel("Step")
 		plt.legend()
+		plt.title("Full day prediction")
 		plt.show()
-
 
 	'''
 	Reads data to be supplied to build the model

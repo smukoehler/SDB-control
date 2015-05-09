@@ -6,7 +6,7 @@ import collections
 
 class SDBmodel:
 	def __init__(self):
-		self.clf = linear_model.Lasso(alpha=0.0001 , max_iter=1000000)
+		self.clf = linear_model.Lasso(alpha=0.001 , max_iter=10000)
 		self.input_data = []
 		self.state_data = []
 
@@ -14,21 +14,21 @@ class SDBmodel:
 		self.input_data.append( input_vector )
 		self.state_data.append( state_vector )
 
-	def assemble_fit_matrices(self,n,m):
+	def assemble_ARMAfit_matrices(self,n,m):
 		numrows = len(self.state_data)-1
 
 		for t in range(0,numrows):
-			arow = numpy.array(self.state_data[t][0]*numpy.identity(n));
+			arow = numpy.array(self.state_data[t][0]);
 			for i in range(1,n):
-				arow = numpy.hstack([arow,self.state_data[t][i]*numpy.identity(n)]);
+				arow = numpy.hstack([arow,self.state_data[t][i]]);
 			for i in range(0,m):
-				arow = numpy.hstack([arow,self.input_data[t][i]*numpy.identity(n)]);
+				arow = numpy.hstack([arow,self.input_data[t][i]]);
 			if t == 0:
 				Amatrix = arow;
-				bmatrix = numpy.vstack([self.state_data[t+1][:]]).transpose();
+				bmatrix = numpy.vstack([self.state_data[t+1][0]]).transpose();
 			else:
 				Amatrix = numpy.vstack([Amatrix,arow]);
-				bmatrix = numpy.vstack([bmatrix,numpy.vstack([self.state_data[t+1][:]]).transpose()]);
+				bmatrix = numpy.vstack([bmatrix,numpy.vstack([self.state_data[t+1][0]]).transpose()]);
 
 		matrices = collections.namedtuple('matrices',['A','b'])
 		Abmatrices = matrices(Amatrix,bmatrix)
@@ -57,11 +57,14 @@ class SDBmodel:
 	def assemble_linmodel_matrices(self,params,n,m):
 		A = numpy.zeros((n,n));
 		B = numpy.zeros((n,m));
-		for i in range(0,n):
+		A[0][:] = params[0:n];
+		B[0][:] = params[n:];
+		for i in range(1,n):
 			for j in range(0,n):
-				A[i][j] = params[i+j*n];
-			for j in range(0,m):
-				B[i][j] = params[i+j*n+n*n]
+				if i-j ==1:
+					A[i][j] = 1
+				else:
+					A[i][j] = 0
 		linmatrices = collections.namedtuple('matrices',['A','B'])
 		ABmatrices = linmatrices(A,B)
 		return ABmatrices;
